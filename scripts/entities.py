@@ -94,7 +94,12 @@ class Enemy(PhysicsEntity):
             self.walking = max(0, self.walking - 1)
             if not self.walking:
                 dis = (self.game.player.pos[0] - self.pos[0], self.game.player.pos[1] - self.pos[1])
-                if (abs(dis[1]) < 16):
+                
+                player = self.game.player
+                # Enemy can only detect player if: not in decoy, OR in decoy but moving significantly
+                decoy_visible = not player.decoy or player.decoy_wobble > 5
+                
+                if (abs(dis[1]) < 16) and decoy_visible:
                     if (self.flip and dis[0] < 0):
                         self.game.sfx['shoot'].play()
                         self.game.projectiles.append([[self.rect().centerx - 7, self.rect().centery], -1.5, 0])
@@ -142,8 +147,16 @@ class Player(PhysicsEntity):
         self.jumps = 2
         self.wall_slide = False
         self.dashing = 0
+        self.decoy = False
+        self.decoy_wobble = 0
     
     def update(self, tilemap, movement=(0, 0)):
+        if self.decoy:
+            movement = (movement[0] * 0.25, movement[1])   
+            self.decoy_wobble += abs(movement[0])
+            if self.decoy_wobble > 40:                      
+                self.decoy = False
+                self.decoy_wobble = 0
         super().update(tilemap, movement=movement)
         
         self.air_time += 1
@@ -199,10 +212,17 @@ class Player(PhysicsEntity):
             self.velocity[0] = min(self.velocity[0] + 0.1, 0)
     
     def render(self, surf, offset=(0, 0)):
-        if abs(self.dashing) <= 50:
+        if self.decoy:
+            img = self.game.assets['decoy']
+            scaled_img = pygame.transform.scale(img, (self.size[0] + 10, self.size[1] + 10))
+            surf.blit(scaled_img, (self.pos[0] - offset[0] - 3,self.pos[1] - offset[1] - 3))
+        elif abs(self.dashing) <= 50:
             super().render(surf, offset=offset)
-            
     def jump(self):
+        if self.decoy:
+            self.decoy = False
+            self.decoy_wobble = 0
+            return False
         if self.wall_slide:
             if self.flip and self.last_movement[0] < 0:
                 self.velocity[0] = 3.5
@@ -224,8 +244,15 @@ class Player(PhysicsEntity):
             return True
     
     def dash(self):
+        if self.decoy:
+            self.decoy = False
+            self.decoy_wobble = 0
+            return
         if not self.dashing:
             if self.flip:
                 self.dashing = -60
             else:
                 self.dashing = 60
+    def toggle_decoy(self):
+        self.decoy = not self.decoy
+        self.decoy_wobble = 0

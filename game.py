@@ -30,8 +30,6 @@ class Game:
             'large_decor': load_images('tiles/large_decor'),
             'stone': load_images('tiles/stone'),
             'player': load_image('entities/player.png'),
-            
-            'clouds': load_images('clouds'),
             'enemy/idle': Animation(load_images('entities/enemy/idle'), img_dur=6),
             'enemy/run': Animation(load_images('entities/enemy/run'), img_dur=4),
             'player/idle': Animation(load_images('entities/player/idle'), img_dur=6),
@@ -43,6 +41,7 @@ class Game:
             'particle/particle': Animation(load_images('particles/particle'), img_dur=6, loop=False),
             'gun': load_image('gun.png'),
             'projectile': load_image('projectile.png'),
+            'decoy': load_image('decoy.png')
         }
         self.parallax_bg = ParallaxBackground(
             layers= [
@@ -208,7 +207,8 @@ class Game:
                     if event.key == pygame.K_UP:
                         if self.player.jump():
                             self.sfx['jump'].play()
-
+                    if event.key == pygame.K_z:
+                        self.player.toggle_decoy()
                     if event.key == pygame.K_x:
                         if self.player.dash():
                             self.sfx['dash'].play()
@@ -239,4 +239,5 @@ class Game:
             self.clock.tick(60)
 for p in pathlib.Path('.').rglob('__pycache__'):
     shutil.rmtree(p)
+
 Game().run()
